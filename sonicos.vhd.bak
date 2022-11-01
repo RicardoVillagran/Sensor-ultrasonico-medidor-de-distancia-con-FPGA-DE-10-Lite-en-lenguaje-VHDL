@@ -1,0 +1,68 @@
+Library IEEE;
+Use IEEE.Std_logic_1164.all;
+Use IEEE.Std_logic_arith.all;
+Use IEEE.Std_logic_unsigned.all;
+entity sonicos is
+Port( clk: in std_logic;
+sensor_disp: out std_logic;
+sensor_eco: in std_logic
+div_reloj : out std_logic);
+
+end sonicos;
+architecture behavioral of sonicos is
+Signal cuenta: unsigned(16 downto 0) := (others => '0');
+Signal centimetros: unsigned(15 downto 0) := (others => '0');
+Signal centimetros_unid: unsigned(3 downto 0) := (others => '0');
+Signal centimetros_dece: unsigned(3 downto 0) := (others => '0');
+Signal sal_unid: unsigned(3 downto 0) := (others => '0');
+Signal sal_dece: unsigned(3 downto 0) := (others => '0');
+Signal eco_pasado: std_logic := '0';
+Signal eco_sinc: std_logic := '0';
+Signal eco_nsinc: std_logic := '0';
+Signal espera: std_logic:= '0';
+begin
+Trigger:process(clk)
+begin
+if rising_edge(clk) then
+if espera = '0' then
+if cuenta = 500 then
+sensor_disp <= '0';
+espera <= '1';
+cuenta <= (others => '0');
+else
+sensor_disp <= '1';
+cuenta <= cuenta+1;
+end if;
+elsif eco_pasado = '0' and eco_sinc = '1' then
+cuenta <= ( others => '0');
+centimetros <= ( others => '0');
+centimetros_unid <= ( others => '0');
+centimetros_dece <= ( others => '0');
+elsif eco_pasado = '1' and eco_sinc = '0' then
+sal_unid <= centimetros_unid;
+sal_dece <= centimetros_dece;
+elsif cuenta = 2900-1 then
+if centimetros_unid = 9 then
+centimetros_unid <= ( others => '0');
+centimetros_dece <= centimetros_dece + 1;
+
+else
+centimetros_unid <= centimetros_unid + 1;
+end if;
+centimetros <= centimetros + 1;
+cuenta<= (others => '0');
+if centimetros = 400 then
+espera <= '0';
+end if;
+else
+cuenta <= cuenta + 1;
+
+end if;
+
+eco_pasado<= eco_sinc;
+eco_sinc <= eco_nsinc;
+eco_nsinc <= sensor_eco;
+
+end if;
+end process;
+end behavioral;
